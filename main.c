@@ -4,14 +4,41 @@
 #include<unistd.h>
 
 #define LSH_RL_BUFSIZE 1024
+#define LSH_TOK_BUFSIZE 64
+#define LSH_TOK_DELIM " \t\r\n\a"
 
-
+/*User input command control functions declaration*/
 void lsh_loop(void);
 char* lsh_read_line(void);
 char** lsh_split_line(char *line);
+
+/*Command execution function decalration*/
 int lsh_execute(char** args);
+
 void free(char* line);
 void free(char** args);
+
+/*Built in commands function declaration*/
+
+int lsh_cd(char **args);
+int lsh_help(char **args);
+int lsh_exit(char **args);
+
+/*List of built in commands and corresponding functions*/
+
+char *builtin_str[] = {
+    "cd",
+    "help",
+    "exit"
+};
+
+int (*buitin_func[]) (char*) {
+    &lsh_cd,
+    &lsh_help,
+    &lsh_exit
+};
+
+/*main function : */
 
 int main(int argc, char**argv){
 
@@ -20,6 +47,9 @@ int main(int argc, char**argv){
     return EXIT_SUCCESS;
 
 }
+
+/*Function defenitions*/
+/*User input command control functions defenition*/
 
 void lsh_loop(void){
 
@@ -80,9 +110,6 @@ char  *lsh_read_line(void){
 
 //Implement the previous part simply using getline ! : Note to dev!
 
-#define LSH_TOK_BUFSIZE 64
-#define LSH_TOK_DELIM " \t\r\n\a"
-
 char **lsh_split_line(char *line) {
 
     int bufsize = LSH_TOK_BUFSIZE, position = 0;
@@ -139,6 +166,8 @@ int lsh_launcher(char **args)
 
     return 1;
 }
+
+
 
 
 
