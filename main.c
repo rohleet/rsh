@@ -4,44 +4,51 @@
 #include<unistd.h>
 #include<string.h>
 
-#define LSH_RL_BUFSIZE 1024
-#define LSH_TOK_BUFSIZE 64
-#define LSH_TOK_DELIM " \t\r\n\a"
+#define RSH_RL_BUFSIZE 1024
+#define RSH_TOK_BUFSIZE 64
+#define RSH_TOK_DELIM " \t\r\n\a"
 
 /*User input command control functions declaration*/
-void lsh_loop(void);
-char* lsh_read_line(void);
-char** lsh_split_line(char *line);
+void rsh_loop(void);
+char* rsh_read_line(void);
+char** rsh_split_line(char *line);
 
 /*Command execution function decalration*/
-int lsh_execute(char** args);
+int rsh_execute(char** args);
 
 /*Built in commands function declaration*/
-int lsh_cd(char **args);
-int lsh_help(char **args);
-int lsh_exit(char **args);
+int rsh_cd(char **args);
+int rsh_help(char **args);
+int rsh_exit(char **args);
+int rsh_pwd(char **args);
+int rsh_echo(char **args);
+
 
 /*List of built in commands and corresponding functions*/
 char *builtin_str[] = {
     "cd",
     "help",
-    "exit"
+    "exit",
+    "pwd",
+    "echo"
 };
 
 /*Function pointers*/
 int (*builtin_func[]) (char **) = {
-    &lsh_cd,
-    &lsh_help,
-    &lsh_exit
+    &rsh_cd,
+    &rsh_help,
+    &rsh_exit,
+    &rsh_pwd,
+    &rsh_echo
 };
 
 /*Builtin command counter*/
-int lsh_num_builtins();
+int rsh_num_builtins();
 
 /*main function : */
 int main(int argc, char**argv){
 
-    lsh_loop();
+    rsh_loop();
 
     return EXIT_SUCCESS;
 
@@ -49,7 +56,7 @@ int main(int argc, char**argv){
 
 /*Function defenitions*/
 /*User input command control functions defenition*/
-void lsh_loop(void){
+void rsh_loop(void){
 
     char *line;
     char **args;
@@ -58,9 +65,9 @@ void lsh_loop(void){
     do{
 
         printf("> ");
-        line = lsh_read_line();
-        args = lsh_split_line(line);
-        status = lsh_execute(args);
+        line = rsh_read_line();
+        args = rsh_split_line(line);
+        status = rsh_execute(args);
 
         free(line);
         free(args);
@@ -70,15 +77,15 @@ void lsh_loop(void){
 
 }
 
-char  *lsh_read_line(void){
+char  *rsh_read_line(void){
 
-    int bufsize = LSH_RL_BUFSIZE;
+    int bufsize = RSH_RL_BUFSIZE;
     int position  = 0;
     char *buffer = malloc(sizeof(char) * bufsize);
     int c;
 
     if(!buffer) {
-        fprintf(stderr, "lsh : allocation error\n");
+        fprintf(stderr, "rsh : allocation error\n");
         exit(EXIT_FAILURE);
     }
 
@@ -95,10 +102,10 @@ char  *lsh_read_line(void){
         position++;
 
         if(position >= bufsize) {
-            bufsize += LSH_RL_BUFSIZE;
+            bufsize += RSH_RL_BUFSIZE;
             buffer = realloc(buffer,bufsize);
             if(!buffer) {
-                fprintf(stderr, "lsh : allocation error\n");
+                fprintf(stderr, "rsh : allocation error\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -107,39 +114,39 @@ char  *lsh_read_line(void){
 }
 
 //Implement the previous part simply using getline ! : Note to dev!
-char **lsh_split_line(char *line) {
+char **rsh_split_line(char *line) {
 
-    int bufsize = LSH_TOK_BUFSIZE, position = 0;
+    int bufsize = RSH_TOK_BUFSIZE, position = 0;
     char **tokens = malloc(bufsize * sizeof(char*));
     char* token;
 
     if(!tokens) {
-        fprintf(stderr, "lsh :allocation error\n");
+        fprintf(stderr, "rsh :allocation error\n");
         exit(EXIT_FAILURE);
     }
 
-    token = strtok(line, LSH_TOK_DELIM);
+    token = strtok(line, RSH_TOK_DELIM);
     while(token != NULL){
         tokens[position] = token;
         position++;
 
         if(position>=bufsize){
-            bufsize+=LSH_TOK_BUFSIZE;
+            bufsize+=RSH_TOK_BUFSIZE;
             tokens = realloc(tokens,bufsize*sizeof(char*));
             if(!tokens) {
-                fprintf(stderr, "lsh : allocation error");
+                fprintf(stderr, "rsh : allocation error");
                 exit(EXIT_FAILURE);
             }
         }
 
-        token = strtok(NULL,LSH_TOK_DELIM);
+        token = strtok(NULL,RSH_TOK_DELIM);
     }
 
     tokens[position] = NULL;
     return tokens;
 }
 
-int lsh_launcher(char **args)
+int rsh_launcher(char **args)
 {
     pid_t pid, wpid;
     int status;
@@ -148,12 +155,12 @@ int lsh_launcher(char **args)
     if(pid==0) {
         //Child process
         if(execvp(args[0],args) == -1){
-            perror("lsh");
+            perror("rsh");
         }
         exit(EXIT_FAILURE);
     } else if(pid<0){
         //fork failure
-        perror("lsh");
+        perror("rsh");
     } else {
         //Parent process
         do{
@@ -165,26 +172,26 @@ int lsh_launcher(char **args)
 }
 
 /*Bultin command counter defenition*/
-int lsh_num_builtins() {
+int rsh_num_builtins() {
     return(sizeof(builtin_str)/sizeof(char *));
 }
 
 /*Built in commands function defenition*/
-int lsh_cd(char **args) {
+int rsh_cd(char **args) {
 
     if (args[1]==NULL) {
-        fprintf(stderr,"lsh:expected argument to \"cd\"\n");
+        fprintf(stderr,"rsh:expected argument to \"cd\"\n");
     } else {
 
         if (chdir(args[1]) != 0) {
-            perror("lsh");
+            perror("rsh");
         }
 
     }
     return 1;
 }
 
-int lsh_help(char **args) {
+int rsh_help(char **args) {
 
     int i;
 
@@ -192,24 +199,63 @@ int lsh_help(char **args) {
     printf("Type the program names arguments and hit enter\n");
     printf("The following are nuilt in:\n");
 
-    for(i=0;i<lsh_num_builtins();i++){
+    for(i=0;i<rsh_num_builtins();i++){
         printf(" %s\n",builtin_str[i]);
     }
 
     return 1;
 }
 
-int lsh_exit(char **args) {
+int rsh_exit(char **args) {
     return 0;
 }
 
-int lsh_execute(char **args) {
+int rsh_pwd(char **args) {
+
+    if(args[1] != NULL) {
+        
+        fprintf(stderr,"Usage : pwd");
+
+    } else {
+
+        char buf[1024];
+
+        if ((getcwd(buf,sizeof(buf))) != NULL) {
+            printf("%s\n",buf);
+        } else {
+            perror("rsh");
+        }
+
+    }
+
+    return 1;
+}
+
+int rsh_echo(char **args) {
+
+    if(args[1] == NULL) {
+        fprintf(stderr,"rsh: expected argument to echo");
+    } else {
+
+        int i=1;
+
+        while(args[i]!=NULL) {
+            printf("%s ",args[i++]);
+        }
+        printf("\n");
+    }
+
+    return 1;
+}
+
+/*Execute function*/
+int rsh_execute(char **args) {
 
     if (args[0] == NULL) {
         return 1;
     }
 
-    for (int i=0;i<lsh_num_builtins();i++) {
+    for (int i=0;i<rsh_num_builtins();i++) {
 
         if (strcmp(args[0],builtin_str[i]) == 0) {
             return (*builtin_func[i])(args);
@@ -217,9 +263,6 @@ int lsh_execute(char **args) {
 
     }
 
-    return lsh_launcher(args);
+    return rsh_launcher(args);
 }
-
-
-  
   
