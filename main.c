@@ -3,6 +3,7 @@
 #include<sys/wait.h>
 #include<unistd.h>
 #include<string.h>
+#include<stdbool.h>
 
 #define RSH_RL_BUFSIZE 1024
 #define RSH_TOK_BUFSIZE 64
@@ -22,6 +23,7 @@ int rsh_help(char **args);
 int rsh_exit(char **args);
 int rsh_pwd(char **args);
 int rsh_echo(char **args);
+int rsh_type(char **args);
 
 
 /*List of built in commands and corresponding functions*/
@@ -30,7 +32,17 @@ char *builtin_str[] = {
     "help",
     "exit",
     "pwd",
-    "echo"
+    "echo",
+    "type"
+};
+
+char *builtin_type[] = {
+    "directory management",
+    "command help",
+    "shell termination",
+    "directory management",
+    "printing",
+    "type command itself"
 };
 
 /*Function pointers*/
@@ -39,7 +51,8 @@ int (*builtin_func[]) (char **) = {
     &rsh_help,
     &rsh_exit,
     &rsh_pwd,
-    &rsh_echo
+    &rsh_echo,
+    &rsh_type
 };
 
 /*Builtin command counter*/
@@ -243,6 +256,31 @@ int rsh_echo(char **args) {
             printf("%s ",args[i++]);
         }
         printf("\n");
+    }
+
+    return 1;
+}
+
+int rsh_type(char **args) {
+
+    if (args[1]==NULL) {
+        fprintf(stderr,"rsh : argument expected");
+        return -1;
+    } 
+
+    bool command_found = false;
+
+    for(int i=0;i<rsh_num_builtins();i++) {
+        if(strcmp(args[1],builtin_str[i]) == 0) {
+            printf("%s\n",builtin_type[i]);
+            command_found = true;
+            break;
+        }
+    }
+
+    if(!command_found) {
+        fprintf(stderr,"Command not found\n");
+        return -1;
     }
 
     return 1;
