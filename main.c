@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<sys/wait.h>
 #include<unistd.h>
+#include<string.h>
 
 #define LSH_RL_BUFSIZE 1024
 #define LSH_TOK_BUFSIZE 64
@@ -15,31 +16,29 @@ char** lsh_split_line(char *line);
 /*Command execution function decalration*/
 int lsh_execute(char** args);
 
-void free(char* line);
-void free(char** args);
-
 /*Built in commands function declaration*/
-
 int lsh_cd(char **args);
 int lsh_help(char **args);
 int lsh_exit(char **args);
 
 /*List of built in commands and corresponding functions*/
-
 char *builtin_str[] = {
     "cd",
     "help",
     "exit"
 };
 
-int (*buitin_func[]) (char*) {
+/*Function pointers*/
+int (*builtin_func[]) (char **) = {
     &lsh_cd,
     &lsh_help,
     &lsh_exit
 };
 
-/*main function : */
+/*Builtin command counter*/
+int lsh_num_builtins();
 
+/*main function : */
 int main(int argc, char**argv){
 
     lsh_loop();
@@ -50,7 +49,6 @@ int main(int argc, char**argv){
 
 /*Function defenitions*/
 /*User input command control functions defenition*/
-
 void lsh_loop(void){
 
     char *line;
@@ -109,7 +107,6 @@ char  *lsh_read_line(void){
 }
 
 //Implement the previous part simply using getline ! : Note to dev!
-
 char **lsh_split_line(char *line) {
 
     int bufsize = LSH_TOK_BUFSIZE, position = 0;
@@ -167,9 +164,61 @@ int lsh_launcher(char **args)
     return 1;
 }
 
+/*Bultin command counter defenition*/
+int lsh_num_builtins() {
+    return(sizeof(builtin_str)/sizeof(char *));
+}
 
+/*Built in commands function defenition*/
+int lsh_cd(char **args) {
 
+    if (args[1]==NULL) {
+        fprintf(stderr,"lsh:expected argument to \"cd\"\n");
+    } else {
 
+        if (chdir(args[1]) != 0) {
+            perror("lsh");
+        }
+
+    }
+    return 1;
+}
+
+int lsh_help(char **args) {
+
+    int i;
+
+    printf("The basicC_shell\n");
+    printf("Type the program names arguments and hit enter\n");
+    printf("The following are nuilt in:\n");
+
+    for(i=0;i<lsh_num_builtins();i++){
+        printf(" %s\n",builtin_str[i]);
+    }
+
+    return 1;
+}
+
+int lsh_exit(char **args) {
+    return 0;
+}
+
+int lsh_execute(char **args) {
+
+    if (args[0] == NULL) {
+        return 1;
+    }
+
+    for (int i=0;i<lsh_num_builtins();i++) {
+
+        if (strcmp(args[0],builtin_str[i]) == 0) {
+            return (*builtin_func[i])(args);
+        }
+
+    }
+
+    return lsh_launcher(args);
+}
 
 
   
