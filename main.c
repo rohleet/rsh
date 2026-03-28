@@ -4,6 +4,8 @@
 #include<unistd.h>
 #include<string.h>
 #include<stdbool.h>
+#include <limits.h>
+#include <pwd.h>
 
 #define RSH_RL_BUFSIZE 1024
 #define RSH_TOK_BUFSIZE 64
@@ -58,6 +60,14 @@ int (*builtin_func[]) (char **) = {
 /*Builtin command counter*/
 int rsh_num_builtins();
 
+/*Prompt features*/
+
+void dir_prompt_printer();
+void username_prompt_printer();
+void hostname_prompt_printer();
+
+int prompt_printer();
+
 /*main function : */
 int main(int argc, char**argv){
 
@@ -77,7 +87,7 @@ void rsh_loop(void){
 
     do{
 
-        printf("> ");
+        prompt_printer();
         line = rsh_read_line();
         args = rsh_split_line(line);
         status = rsh_execute(args);
@@ -302,5 +312,40 @@ int rsh_execute(char **args) {
     }
 
     return rsh_launcher(args);
+}
+
+/*Prompt features implementation*/
+int prompt_printer() {
+    username_prompt_printer();
+    printf("@");
+    hostname_prompt_printer();
+    printf("::");
+    dir_prompt_printer();
+    printf("~$");
+}
+
+void dir_prompt_printer() {
+    char buf[1024];
+
+    if ((getcwd(buf,sizeof(buf))) != NULL) {
+        printf("%s",buf);
+    }
+}
+
+void username_prompt_printer() {
+
+    struct passwd *pw = getpwuid(geteuid());
+
+    if (pw) {
+        printf("%s", pw->pw_name);
+    }
+}
+
+void hostname_prompt_printer(){
+    char buf[1024];
+
+    if(gethostname(buf, 1024) == 0) {
+        printf("%s",buf);
+    }
 }
   
