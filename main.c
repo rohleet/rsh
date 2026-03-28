@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <pwd.h>
 
+
 #define RSH_RL_BUFSIZE 1024
 #define RSH_TOK_BUFSIZE 64
 #define RSH_TOK_DELIM " \t\r\n\a"
@@ -26,6 +27,7 @@ int rsh_exit(char **args);
 int rsh_pwd(char **args);
 int rsh_echo(char **args);
 int rsh_type(char **args);
+int rsh_export(char **args);
 
 
 /*List of built in commands and corresponding functions*/
@@ -35,7 +37,8 @@ char *builtin_str[] = {
     "exit",
     "pwd",
     "echo",
-    "type"
+    "type",
+    "export"
 };
 
 char *builtin_type[] = {
@@ -54,7 +57,8 @@ int (*builtin_func[]) (char **) = {
     &rsh_exit,
     &rsh_pwd,
     &rsh_echo,
-    &rsh_type
+    &rsh_type,
+    &rsh_export
 };
 
 /*Builtin command counter*/
@@ -157,7 +161,7 @@ char **rsh_split_line(char *line) {
             bufsize+=RSH_TOK_BUFSIZE;
             tokens = realloc(tokens,bufsize*sizeof(char*));
             if(!tokens) {
-                fprintf(stderr, "rsh : allocation error");
+                fprintf(stderr, "rsh : allocation error\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -237,7 +241,7 @@ int rsh_pwd(char **args) {
 
     if(args[1] != NULL) {
         
-        fprintf(stderr,"Usage : pwd");
+        fprintf(stderr,"Usage : pwd\n");
 
     } else {
 
@@ -257,7 +261,7 @@ int rsh_pwd(char **args) {
 int rsh_echo(char **args) {
 
     if(args[1] == NULL) {
-        fprintf(stderr,"rsh: expected argument to echo");
+        fprintf(stderr,"rsh: expected argument to echo\n");
     } else {
 
         int i=1;
@@ -274,7 +278,7 @@ int rsh_echo(char **args) {
 int rsh_type(char **args) {
 
     if (args[1]==NULL) {
-        fprintf(stderr,"rsh : argument expected");
+        fprintf(stderr,"rsh : argument expected\n");
         return -1;
     } 
 
@@ -295,6 +299,21 @@ int rsh_type(char **args) {
 
     return 1;
 }
+
+int rsh_export(char **args) {
+    
+    if(args[1] == NULL || args[2]==NULL) {
+        fprintf(stderr,"rsh:expected argument\n");
+    } else {
+
+        if(setenv(args[1],args[2],0) != 1) {
+            perror("rsh\n");
+        }
+    }
+
+    return 1;
+}
+
 
 /*Execute function*/
 int rsh_execute(char **args) {
