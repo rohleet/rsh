@@ -29,6 +29,10 @@ int rsh_echo(char **args);
 int rsh_type(char **args);
 int rsh_export(char **args);
 
+/*Command history*/
+char *last_executed = NULL;
+int rsh_get_history();
+int rsh_set_history(char *command);
 
 /*List of built in commands and corresponding functions*/
 char *builtin_str[] = {
@@ -38,7 +42,8 @@ char *builtin_str[] = {
     "pwd",
     "echo",
     "type",
-    "export"
+    "export",
+    "history"
 };
 
 char *builtin_type[] = {
@@ -58,7 +63,8 @@ int (*builtin_func[]) (char **) = {
     &rsh_pwd,
     &rsh_echo,
     &rsh_type,
-    &rsh_export
+    &rsh_export,
+    &rsh_get_history
 };
 
 /*Builtin command counter*/
@@ -366,5 +372,22 @@ void hostname_prompt_printer(){
     if(gethostname(buf, 1024) == 0) {
         printf("%s",buf);
     }
+}
+
+/*Command history implementation*/
+
+int rsh_set_history(char *command) {
+    last_executed = command;
+    return 0;
+}
+
+int rsh_get_history() {
+
+    if(!last_executed) {
+        perror("rsh:Stack empty\n");
+    } else {
+        printf("%s\n",last_executed);
+    }
+    
 }
   
