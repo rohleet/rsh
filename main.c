@@ -31,7 +31,7 @@ int rsh_export(char **args);
 
 /*Command history*/
 char *last_executed = NULL;
-int rsh_get_history();
+int rsh_get_history(char **args);
 int rsh_set_history(char *command);
 
 /*List of built in commands and corresponding functions*/
@@ -52,7 +52,8 @@ char *builtin_type[] = {
     "shell termination",
     "directory management",
     "printing",
-    "type command itself"
+    "type command itself",
+    "command history"
 };
 
 /*Function pointers*/
@@ -101,6 +102,7 @@ void rsh_loop(void){
         line = rsh_read_line();
         args = rsh_split_line(line);
         status = rsh_execute(args);
+        rsh_set_history(line);
 
         free(line);
         free(args);
@@ -312,7 +314,7 @@ int rsh_export(char **args) {
         fprintf(stderr,"rsh:expected argument\n");
     } else {
 
-        if(setenv(args[1],args[2],0) != 1) {
+        if(setenv(args[1],args[2],0) != 0) {
             perror("rsh\n");
         }
     }
@@ -377,17 +379,19 @@ void hostname_prompt_printer(){
 /*Command history implementation*/
 
 int rsh_set_history(char *command) {
-    last_executed = command;
+    if(last_executed != NULL) {
+        free(last_executed);
+    }
+    last_executed = strdup(command);
     return 0;
 }
 
-int rsh_get_history() {
+int rsh_get_history(char **args) {
 
-    if(!last_executed) {
-        perror("rsh:Stack empty\n");
+    if(last_executed == NULL) {
+        fprintf(stderr, "rsh: no commands in history\n");
     } else {
         printf("%s\n",last_executed);
     }
-    
+    return 1;
 }
-  
