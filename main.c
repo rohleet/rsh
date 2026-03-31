@@ -11,6 +11,7 @@
 #define RSH_RL_BUFSIZE 1024
 #define RSH_TOK_BUFSIZE 64
 #define RSH_TOK_DELIM " \t\r\n\a"
+#define RSH_HIS_BUFSIZE 100
 
 /*User input command control functions declaration*/
 void rsh_loop(void);
@@ -30,9 +31,12 @@ int rsh_type(char **args);
 int rsh_export(char **args);
 
 /*Command history*/
-char *last_executed = NULL;
+char **last_executed = NULL;
+int last_executed_index = 0;
+int history_buf_size = RSH_HIS_BUFSIZE;
 int rsh_get_history(char **args);
 int rsh_set_history(char *command);
+int rsh_free_history(void);
 
 /*List of built in commands and corresponding functions*/
 char *builtin_str[] = {
@@ -109,7 +113,7 @@ void rsh_loop(void){
 
     } while(status);
 
-
+    rsh_free_history();
 }
 
 char  *rsh_read_line(void){
@@ -242,6 +246,7 @@ int rsh_help(char **args) {
 }
 
 int rsh_exit(char **args) {
+    rsh_free_history();
     return 0;
 }
 
@@ -379,10 +384,27 @@ void hostname_prompt_printer(){
 /*Command history implementation*/
 
 int rsh_set_history(char *command) {
-    if(last_executed != NULL) {
-        free(last_executed);
+
+    if(last_executed == NULL) {
+
+        last_executed = malloc(RSH_HIS_BUFSIZE*sizeof(char *));
+        if(!last_executed) {
+            fprintf(stderr, "rsh: allocation error\n");
+            exit(EXIT_FAILURE);
+        }
+
+    } else if (last_executed_index == history_buf_size) {
+
+        history_buf_size += RSH_HIS_BUFSIZE;
+        last_executed = realloc(last_executed,history_buf_size*sizeof(char *));
+
+        if(!last_executed) {
+            fprintf(stderr, "rsh: allocation error\n");
+            exit(EXIT_FAILURE);
+        }
     }
-    last_executed = strdup(command);
+
+    last_executed[last_executed_index++] = strdup(command);
     return 0;
 }
 
@@ -391,7 +413,24 @@ int rsh_get_history(char **args) {
     if(last_executed == NULL) {
         fprintf(stderr, "rsh: no commands in history\n");
     } else {
-        printf("%s\n",last_executed);
+        for(int i=0;i<last_executed_index;i++) {
+            printf("%s\n",last_executed[i]);
+        }
     }
+    return 1;
+}
+
+int rsh_free_history(void) {
+
+    for(int i=0;i<last_executed_index;i++) {
+        free(last_executed[i]);
+        last_executed[i] = NULL;
+    }
+
+    free(last_executed);
+    last_executed = NULL;
+    last_executed_index = 0;
+    history_buf_size = 0;
+
     return 1;
 }
