@@ -172,7 +172,9 @@ char **rsh_split_line(char *line) {
 
     char c;
     int line_char_position = 0;
-    bool symbol_present = false;
+    bool quote_symbol_present = false;
+
+    bool escape_symbol_present = false;
 
     while (line[line_char_position]!='\0')
     {
@@ -200,7 +202,7 @@ char **rsh_split_line(char *line) {
                 exit(EXIT_FAILURE);
             }
 
-            symbol_present = false;
+            quote_symbol_present = false;
 
         } else if(str_char_position==str_bufsize) {
 
@@ -214,9 +216,9 @@ char **rsh_split_line(char *line) {
 
         }
 
-        if(c=='"') {
+        if(c=='"' && !escape_symbol_present) {
 
-            if(symbol_present) {
+            if(quote_symbol_present) {
 
                 if(str_char_position!=0) {
 
@@ -226,11 +228,13 @@ char **rsh_split_line(char *line) {
 
                 }
 
+                quote_symbol_present = false;
+
             } else {
-                symbol_present = true;
+                quote_symbol_present = true;
             }
 
-        } else if(c == ' ' && !symbol_present) {
+        } else if(c == ' ' && !quote_symbol_present) {
 
             if(str_char_position!=0) {
 
@@ -240,8 +244,11 @@ char **rsh_split_line(char *line) {
 
             }
 
+        } else if(c == '\\' && !escape_symbol_present) {
+            escape_symbol_present = true;
         } else {
             tokens[str_array_position][str_char_position++] = c;
+            escape_symbol_present = false;
         }
 
     }
