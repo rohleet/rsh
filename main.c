@@ -12,6 +12,7 @@
 #define RSH_TOK_BUFSIZE 64
 #define RSH_TOK_DELIM " \t\r\n\a"
 #define RSH_HIS_BUFSIZE 100
+#define RSH_TOK_STR_BUFSIZE 64
 
 /*User input command control functions declaration*/
 void rsh_loop(void);
@@ -57,6 +58,7 @@ char *builtin_type[] = {
     "directory management",
     "printing",
     "type command itself",
+    "Set environmental variable",
     "command history"
 };
 
@@ -109,8 +111,12 @@ void rsh_loop(void){
         rsh_set_history(line);
 
         free(line);
+        if(args != NULL) {
+        for(int i = 0; args[i] != NULL; i++) {
+            free(args[i]);
+        }
+        }
         free(args);
-
     } while(status);
 
     rsh_free_history();
@@ -152,37 +158,104 @@ char  *rsh_read_line(void){
     }
 }
 
-//Implement the previous part simply using getline ! : Note to dev!
+
 char **rsh_split_line(char *line) {
 
-    int bufsize = RSH_TOK_BUFSIZE, position = 0;
-    char **tokens = malloc(bufsize * sizeof(char*));
-    char* token;
+    int array_bufsize = RSH_TOK_BUFSIZE, str_char_position = 0,str_array_position = 0;
+    char **tokens = calloc(array_bufsize,sizeof(char*));
+    int str_bufsize = RSH_TOK_STR_BUFSIZE;
 
     if(!tokens) {
-        fprintf(stderr, "rsh :allocation error\n");
+        fprintf(stderr, "rsh : allocation error\n");
         exit(EXIT_FAILURE);
     }
 
-    token = strtok(line, RSH_TOK_DELIM);
-    while(token != NULL){
-        tokens[position] = token;
-        position++;
+    char c;
+    int line_char_position = 0;
+    bool symbol_present = false;
 
-        if(position>=bufsize){
-            bufsize+=RSH_TOK_BUFSIZE;
-            tokens = realloc(tokens,bufsize*sizeof(char*));
+    while (line[line_char_position]!='\0')
+    {
+        c = line[line_char_position++];
+
+        if(str_array_position == array_bufsize) {
+
+            array_bufsize += RSH_TOK_BUFSIZE;
+            tokens = realloc(tokens, array_bufsize * sizeof(char *));
+
             if(!tokens) {
                 fprintf(stderr, "rsh : allocation error\n");
                 exit(EXIT_FAILURE);
             }
+
         }
 
-        token = strtok(NULL,RSH_TOK_DELIM);
+        if(tokens[str_array_position] == NULL) {
+
+            str_bufsize = RSH_TOK_STR_BUFSIZE;
+            tokens[str_array_position] = malloc(str_bufsize * sizeof(char));
+
+            if(!tokens[str_array_position]) {
+                fprintf(stderr, "rsh: allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+
+            symbol_present = false;
+
+        } else if(str_char_position==str_bufsize) {
+
+            str_bufsize += RSH_TOK_STR_BUFSIZE;
+            tokens[str_array_position] = realloc(tokens[str_array_position],str_bufsize);
+
+            if(!tokens[str_array_position]) {
+                fprintf(stderr, "rsh: allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+
+        }
+
+        if(c=='"') {
+
+            if(symbol_present) {
+
+                if(str_char_position!=0) {
+
+                    tokens[str_array_position][str_char_position] = '\0';
+                    str_char_position = 0;
+                    str_array_position++;
+
+                }
+
+            } else {
+                symbol_present = true;
+            }
+
+        } else if(c == ' ' && !symbol_present) {
+
+            if(str_char_position!=0) {
+
+                tokens[str_array_position][str_char_position] = '\0';
+                str_char_position = 0;
+                str_array_position++;
+
+            }
+
+        } else {
+            tokens[str_array_position][str_char_position++] = c;
+        }
+
     }
 
-    tokens[position] = NULL;
+    if(str_char_position > 0) {
+
+        tokens[str_array_position][str_char_position] = '\0';
+        str_array_position++;
+        
+    }
+    
+    tokens[str_array_position] = NULL;
     return tokens;
+
 }
 
 int rsh_launcher(char **args)
@@ -421,6 +494,10 @@ int rsh_get_history(char **args) {
 }
 
 int rsh_free_history(void) {
+
+    if(last_executed == NULL) {  // add this check
+        return 1;
+    }
 
     for(int i=0;i<last_executed_index;i++) {
         free(last_executed[i]);
